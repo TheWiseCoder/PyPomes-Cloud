@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pypomes_cloud"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   { name="GT Nunes", email="wisecoder01@gmail.com" }
 ]
@@ -24,7 +24,7 @@ dependencies = [
     "azure-identity>=1.14.0",
     "azure-storage-blob>=12.17.0",
     "pip>=23.2.1",
-    "pypomes_core>=0.2.3",
+    "pypomes_core>=0.2.6",
     "setuptools>=68.0.0",
     "wheel>=0.41.0"
 ]
