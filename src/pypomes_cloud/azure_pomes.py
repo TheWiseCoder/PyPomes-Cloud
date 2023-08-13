@@ -2,6 +2,7 @@ import io
 import sys
 from azure.storage.blob import BlobClient, BlobServiceClient, BlobProperties
 from typing import Final
+from logging import Logger
 from pypomes_core import APP_PREFIX, env_get_str, exc_format
 
 # connection string to Azure
@@ -11,39 +12,45 @@ AZURE_CONNECTION_STRING: Final[str] = env_get_str(f"{APP_PREFIX}_AZURE_CONNECTIO
 AZURE_STORAGE_BUCKET: Final[str] = env_get_str(f"{APP_PREFIX}_AZURE_STORAGE_BUCKET")
 
 
-def azure_verify(errors: list[str]) -> bool:
+def azure_verify(errors: list[str] | None, logger: Logger = None) -> bool:
     """
     Verify whether a connection to the Azure cloud services is possible.
 
     :param errors: incidental errors
+    :param logger: optional logger
     :return: True if a connection is possible, or False otherwise
     """
     # initialize the return variable
     result: bool = False
 
+    err_msg: str | None = None
     try:
         client: BlobServiceClient = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
         client.close()
         result = True
     except Exception as e:
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, "Verified connection")
 
     return result
 
 
-def azure_blob_exists(errors: list[str], blob_path: str,
-                      bucket_name: str = AZURE_STORAGE_BUCKET) -> bool:
+def azure_blob_exists(errors: list[str] | None, blob_path: str,
+                      bucket_name: str = AZURE_STORAGE_BUCKET, logger: Logger = None) -> bool:
     """
     Verify whether the file referred to by *blob_path*, within *bucket_name*, exists.
 
     :param errors: incidental errors
     :param blob_path: file path within the bucket
     :param bucket_name: name of bucket (defaults to AZURE_STORAGE_BUCKET)
-    :return: True if the file exists, False otherwise, or None in case of error
+    :param logger: optional logger
+    :return: True if the file exists, False otherwise, or None if error
     """
     # initialize the return variable
     result: bool | None = None
 
+    err_msg: str | None = None
     try:
         with BlobClient.from_connection_string(
             conn_str=AZURE_CONNECTION_STRING,
@@ -52,24 +59,28 @@ def azure_blob_exists(errors: list[str], blob_path: str,
         ) as client:
             result = client.exists()
     except Exception as e:
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, f"Checked if blob '{blob_path}' exists")
 
     return result
 
 
-def azure_blob_retrieve(errors: list[str], blob_path: str,
-                        bucket_name: str = AZURE_STORAGE_BUCKET) -> bytes:
+def azure_blob_retrieve(errors: list[str] | None, blob_path: str,
+                        bucket_name: str = AZURE_STORAGE_BUCKET, logger: Logger = None) -> bytes:
     """
     Obtem e retorna o conteúdo *raw* do arquivo apontado por *blob_path*, dentro de *bucket_name*.
 
     :param errors: incidental errors
-    :param blob_path: caminho do arquivo no bucket
-    :param bucket_name: o nome do bucket (AZURE_STORAGE_BUCKET, se não especificado)
-    :return: o conteúdo do blob, ou None se houve erro
+    :param blob_path: file path within the bucket
+    :param bucket_name: name of bucket (defaults to AZURE_STORAGE_BUCKET)
+    :param logger: optional logger
+    :return: file contents, or None if error
     """
     # initialize the return variable
     result: bytes | None = None
 
+    err_msg: str | None = None
     try:
         with BlobClient.from_connection_string(
             conn_str=AZURE_CONNECTION_STRING,
@@ -81,25 +92,29 @@ def azure_blob_retrieve(errors: list[str], blob_path: str,
             stream.seek(0)
             result = stream.read()
     except Exception as e:
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, f"Retrieved blob '{blob_path}'")
 
     return result
 
 
-def azure_blob_store(errors: list[str], content: bytes, blob_path: str,
-                     bucket_name: str = AZURE_STORAGE_BUCKET) -> bool:
+def azure_blob_store(errors: list[str] | None, content: bytes, blob_path: str,
+                     bucket_name: str = AZURE_STORAGE_BUCKET, logger: Logger = None) -> bool:
     """
     Armazena o conteúdo *content* no caminho apontado por *blob_path*, dentro de *bucket_name*.
 
     :param errors: incidental errors
     :param content: conteúdo a ser armazenado
-    :param blob_path: caminho do arquivo no bucket
-    :param bucket_name: o nome do bucket (AZURE_STORAGE_BUCKET, se não especificado)
-    :return: True se a operação foi bem sucedida, ou False em caso contrário
+    :param blob_path: file path within the bucket
+    :param bucket_name: name of bucket (defaults to AZURE_STORAGE_BUCKET)
+    :param logger: optional logger
+    :return: True if success, or False otherwise
     """
     # declare the return variable
     result: bool
 
+    err_msg: str | None = None
     try:
         with BlobClient.from_connection_string(
             conn_str=AZURE_CONNECTION_STRING,
@@ -115,24 +130,28 @@ def azure_blob_store(errors: list[str], content: bytes, blob_path: str,
             result = True
     except Exception as e:
         result = False
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, f"Stored blob '{blob_path}'")
 
     return result
 
 
-def azure_blob_delete(errors: list[str], blob_path: str,
-                      bucket_name: str = AZURE_STORAGE_BUCKET) -> bool:
+def azure_blob_delete(errors: list[str] | None, blob_path: str,
+                      bucket_name: str = AZURE_STORAGE_BUCKET, logger: Logger = None) -> bool:
     """
     Remove o arquivo apontado por *blob_path*, dentro de *bucket_name*, e todos os seus *snapshots*.
 
     :param errors: incidental errors
-    :param blob_path: caminho do arquivo no bucket
-    :param bucket_name: o nome do bucket (AZURE_STORAGE_BUCKET, se não especificado)
-    :return: True se a operação foi bem sucedida, ou False em caso contrário
+    :param blob_path: file path within the bucket
+    :param bucket_name: name of bucket (defaults to AZURE_STORAGE_BUCKET)
+    :param logger: optional logger
+    :return: True if success, or False otherwise
     """
     # declare the return variable
     result: bool
 
+    err_msg: str | None = None
     try:
         with BlobClient.from_connection_string(
             conn_str=AZURE_CONNECTION_STRING,
@@ -143,26 +162,28 @@ def azure_blob_delete(errors: list[str], blob_path: str,
             result = True
     except Exception as e:
         result = False
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, f"Deleted blob '{blob_path}'")
 
     return result
 
 
-def azure_blob_get_mimetype(errors: list[str], blob_path: str,
-                            bucket_name: str = AZURE_STORAGE_BUCKET) -> str:
+def azure_blob_get_mimetype(errors: list[str] | None, blob_path: str,
+                            bucket_name: str = AZURE_STORAGE_BUCKET, logger: Logger = None) -> str:
     """
-    Obtem e retorna o texxto contido no documento apontado por *file_path*, dentro de  *bucket_name*.
-
-    Esse documento deve ser do tipo HTML ou PDF.
+    Return the mimetype of the file referred to by *file_path*, within  *bucket_name*.
 
     :param errors: incidental errors
-    :param blob_path: caminho do arquivo no bucket
-    :param bucket_name: o nome do bucket (AZURE_STORAGE_BUCKET, se não especificado)
-    :return: o texto do blob, codificado em UTF-8
+    :param blob_path: file path within the bucket
+    :param bucket_name: name of bucket (defaults to AZURE_STORAGE_BUCKET)
+    :param logger: optional logger
+    :return: the file mimetype, or None if error
     """
     # initialize the return variable
     result: str | None = None
 
+    err_msg: str | None = None
     try:
         with BlobClient.from_connection_string(
             conn_str=AZURE_CONNECTION_STRING,
@@ -172,20 +193,40 @@ def azure_blob_get_mimetype(errors: list[str], blob_path: str,
             props: BlobProperties = client.get_blob_properties()
             result = props.get("content_settings").get("content_type")
     except Exception as e:
-        errors.append(__azure_except_msg(e))
+        err_msg = __azure_except_msg(e)
+
+    __azure_log(errors, err_msg, logger, f"Got mimetype for blob '{blob_path}'")
 
     return result
 
 
 def __azure_except_msg(exception: Exception) -> str:
     """
-    Formata e retorna a mensagem de erro correspondente à exceção levantada no acesso ao Azure.
+    Format and return the error message in the exception raised on acessing Azure.
 
-    :param exception: A exceção levantada
-    :return: A mensagem de erro formatada
+    :param exception: the raised exception
+    :return: the formatted error message
     """
     # TODO
     return exc_format(exception, sys.exc_info())
+
+
+def __azure_log(errors: list[str] | None, err_msg: str, logger: Logger, debug_msg: str) -> None:
+    """
+    Log *err_msg* and add it to *errors*, or log *debug_msg*, whatever is applicable.
+
+    :param errors: incidental errors
+    :param err_msg: the error message
+    :param logger: optional logger
+    :param debug_msg: a debug message
+    """
+    if err_msg:
+        if errors:
+            errors.append(err_msg)
+        if logger:
+            logger.error(err_msg)
+    elif logger:
+        logger.debug(debug_msg)
 
 
 # test Azure operations
