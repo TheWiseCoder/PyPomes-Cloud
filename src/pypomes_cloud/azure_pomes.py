@@ -221,10 +221,10 @@ def __azure_log(errors: list[str] | None, err_msg: str, logger: Logger, debug_ms
     :param debug_msg: a debug message
     """
     if err_msg:
-        if errors:
-            errors.append(err_msg)
         if logger:
             logger.error(err_msg)
+        if errors is not None:
+            errors.append(err_msg)
     elif logger:
         logger.debug(debug_msg)
 
