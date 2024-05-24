@@ -6,10 +6,10 @@ from logging import Logger
 from pypomes_core import APP_PREFIX, env_get_str, exc_format
 
 # connection string to Azure
-AZURE_CONNECTION_STRING: Final[str] = env_get_str(f"{APP_PREFIX}_AZURE_CONNECTION_STRING")
+AZURE_CONNECTION_STRING: Final[str] = env_get_str(key=f"{APP_PREFIX}_AZURE_CONNECTION_STRING")
 
 #  storage bucket name
-AZURE_STORAGE_BUCKET: Final[str] = env_get_str(f"{APP_PREFIX}_AZURE_STORAGE_BUCKET")
+AZURE_STORAGE_BUCKET: Final[str] = env_get_str(key=f"{APP_PREFIX}_AZURE_STORAGE_BUCKET")
 
 
 def azure_verify(errors: list[str] | None,
@@ -26,11 +26,13 @@ def azure_verify(errors: list[str] | None,
 
     err_msg: str | None = None
     try:
-        client: BlobServiceClient = BlobServiceClient.from_connection_string(AZURE_CONNECTION_STRING)
+        client: BlobServiceClient = \
+            BlobServiceClient.from_connection_string(conn_str=AZURE_CONNECTION_STRING)
         client.close()
         result = True
     except Exception as e:
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, "Verified connection")
 
@@ -62,7 +64,8 @@ def azure_blob_exists(errors: list[str] | None,
         ) as client:
             result = client.exists()
     except Exception as e:
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, f"Checked if blob '{blob_path}' exists")
 
@@ -97,7 +100,8 @@ def azure_blob_retrieve(errors: list[str] | None,
             stream.seek(0)
             result = stream.read()
     except Exception as e:
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, f"Retrieved blob '{blob_path}'")
 
@@ -137,7 +141,8 @@ def azure_blob_store(errors: list[str] | None,
             result = True
     except Exception as e:
         result = False
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, f"Stored blob '{blob_path}'")
 
@@ -171,7 +176,8 @@ def azure_blob_delete(errors: list[str] | None,
             result = True
     except Exception as e:
         result = False
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, f"Deleted blob '{blob_path}'")
 
@@ -204,7 +210,8 @@ def azure_blob_get_mimetype(errors: list[str] | None,
             props: BlobProperties = client.get_blob_properties()
             result = props.get("content_settings").get("content_type")
     except Exception as e:
-        err_msg = exc_format(e, sys.exc_info())
+        err_msg = exc_format(exc=e,
+                             exc_info=sys.exc_info())
 
     __azure_log(errors, err_msg, logger, f"Got mimetype for blob '{blob_path}'")
 
