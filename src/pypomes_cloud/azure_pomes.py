@@ -12,8 +12,8 @@ AZURE_CONNECTION_STRING: Final[str] = env_get_str(key=f"{APP_PREFIX}_AZURE_CONNE
 AZURE_STORAGE_BUCKET: Final[str] = env_get_str(key=f"{APP_PREFIX}_AZURE_STORAGE_BUCKET")
 
 
-def azure_verify(errors: list[str] | None,
-                 logger: Logger = None) -> bool:
+def azure_assert_access(errors: list[str] | None,
+                        logger: Logger = None) -> bool:
     """
     Verify whether a connection to the Azure cloud services is possible.
 
